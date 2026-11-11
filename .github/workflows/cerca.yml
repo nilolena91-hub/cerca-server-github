@@ -1,0 +1,37 @@
+name: Cerca server Oracle gratuito
+
+# Ogni 10 minuti prova a creare il server gratuito su Oracle.
+# Appena ci riesce, manda un messaggio su Telegram. Poi non fa piu' niente.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:        # pulsante "Run workflow" per la prova manuale
+
+concurrency:
+  group: cerca-server
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cerca:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Installa la libreria di Oracle
+        run: pip install -r requirements.txt
+      - name: Un giro di tentativi
+        env:
+          CERCA_UNA_VOLTA: "1"
+          AVVISO_PROVA: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
+          OCI_CONFIG: ${{ secrets.OCI_CONFIG }}
+          OCI_KEY: ${{ secrets.OCI_KEY }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python cerca_server.py

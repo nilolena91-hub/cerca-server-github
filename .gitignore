@@ -1,0 +1,8 @@
+# Le chiavi NON vanno mai su GitHub: stanno nei Secrets del progetto.
+oci/
+*.pem
+*.key
+.env
+telegram.env
+server.txt
+__pycache__/
