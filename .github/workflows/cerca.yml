@@ -1,10 +1,12 @@
 name: Cerca server Oracle gratuito
 
-# Ogni 10 minuti prova a creare il server gratuito su Oracle.
+# Prova di continuo a creare il server gratuito su Oracle.
+# GitHub avvia i lavori programmati con molto ritardo (circa uno all'ora),
+# quindi ogni avvio resta acceso ~50 minuti e riprova ogni 2 minuti e mezzo.
 # Appena ci riesce, manda un messaggio su Telegram. Poi non fa piu' niente.
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/15 * * * *"
   workflow_dispatch:        # pulsante "Run workflow" per la prova manuale
 
 concurrency:
@@ -17,7 +19,7 @@ permissions:
 jobs:
   cerca:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 58
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,6 +31,8 @@ jobs:
       - name: Un giro di tentativi
         env:
           CERCA_UNA_VOLTA: "1"
+          # prova manuale: un giro solo (risposta veloce); avvii programmati: ~50 minuti
+          CERCA_DURATA_MINUTI: ${{ github.event_name == 'workflow_dispatch' && '0' || '50' }}
           AVVISO_PROVA: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
           OCI_CONFIG: ${{ secrets.OCI_CONFIG }}
           OCI_KEY: ${{ secrets.OCI_KEY }}

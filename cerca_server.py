@@ -29,6 +29,10 @@ SUL_TELEFONO = "com.termux" in os.environ.get("PREFIX", "")
 # Su GitHub: un solo giro di tentativi per esecuzione (GitHub lo rilancia ogni 10 minuti)
 UNA_VOLTA = os.environ.get("CERCA_UNA_VOLTA") == "1"
 PROVA_MANUALE = os.environ.get("AVVISO_PROVA") == "1"
+# GitHub avvia i lavori programmati con molto ritardo (circa 1 all'ora):
+# ogni avvio resta acceso fino a questi minuti e riprova piu' volte.
+DURATA_MINUTI = float(os.environ.get("CERCA_DURATA_MINUTI", "0") or 0)
+ATTESA_GITHUB = 150             # secondi tra un giro e l'altro dentro lo stesso avvio
 
 NOME = "mio-capitale"
 NOME_RETE = "mio-capitale-rete"
@@ -299,12 +303,13 @@ def main():
         if UNA_VOLTA:
             stampa("Un giro di tentativi (GitHub riprova da solo tra 10 minuti).")
             if PROVA_MANUALE:
-                telegram("✅ Cerca server su GitHub: configurazione corretta! Provo ogni 10 minuti e "
-                         "ti scrivo appena trovo il server.")
+                telegram("✅ Cerca server su GitHub: configurazione corretta! Riprovo di continuo "
+                         "(circa ogni 2-3 minuti) e ti scrivo appena trovo il server.")
         else:
             stampa("Inizio la ricerca di un posto libero. Lascia questa finestra aperta e il PC acceso.")
             telegram("🔎 Ho iniziato a cercare un server gratuito su Oracle. Ti scrivo appena lo trovo.")
         tentativi, ultimo_avviso, id_server = 0, time.time(), None
+        fine = time.time() + DURATA_MINUTI * 60
         while not id_server:
             tentativi += 1
             for forma, dimensioni in FORME:
@@ -340,7 +345,11 @@ def main():
                 if id_server:
                     break
             if not id_server and UNA_VOLTA:
-                stampa("Nessun posto libero per ora.")
+                if time.time() + ATTESA_GITHUB < fine:
+                    stampa(f"Nessun posto libero: riprovo tra {ATTESA_GITHUB // 60} minuti e mezzo.")
+                    time.sleep(ATTESA_GITHUB)
+                    continue
+                stampa(f"Nessun posto libero in questo avvio ({tentativi} giri). GitHub riparte da solo.")
                 return
             if not id_server:
                 if time.time() - ultimo_avviso > 12 * 3600:
